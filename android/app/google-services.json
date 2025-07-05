@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "241289146857",
+    "project_id": "construfast-ae515",
+    "storage_bucket": "construfast-ae515.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:241289146857:android:19bf65174070f4352f9b78",
+        "android_client_info": {
+          "package_name": "com.example.teste"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyABorSWwy9FVzxWXURPRFhMwm1I_XpjgcY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
