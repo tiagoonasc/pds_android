@@ -1,11 +1,9 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:teste/src/config/custom_colors.dart';
 import 'package:teste/src/models/cart_item_model.dart';
 import 'package:teste/src/pages/common_widgets/quantity_widget.dart';
 import 'package:teste/src/services/utils_services.dart';
-import 'package:teste/src/services/cart_service.dart'; // 🔧 Import do service
+import 'package:teste/src/services/cart_service.dart';
 
 class CartTile extends StatefulWidget {
   final CartItemModel cartItem;
@@ -23,7 +21,7 @@ class CartTile extends StatefulWidget {
 
 class _CartTileState extends State<CartTile> {
   final UtilsServices utilsServices = UtilsServices();
-  final CartService _cartService = CartService(); // 🔧 instância do service
+  final CartService _cartService = CartService();
 
   @override
   Widget build(BuildContext context) {

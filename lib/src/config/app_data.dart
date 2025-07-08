@@ -41,7 +41,7 @@ ItemModel tinta = ItemModel(
   itemName: 'Tinta',
   price: 630.00,
   unit: 'RS',
-  id: '1',
+  id: '8',
 );
 ItemModel torneira = ItemModel(
   description: 'Torneira Docol, garantia e qualidade compravadas',
@@ -49,7 +49,7 @@ ItemModel torneira = ItemModel(
   itemName: 'Torneira',
   price: 357.90,
   unit: 'RS',
-  id: '1',
+  id: '9',
 );
 
 List<ItemModel> items = [cimento, furadeira, piso, tijolo, tinta, torneira];
