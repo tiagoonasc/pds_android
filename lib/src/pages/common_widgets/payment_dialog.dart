@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/src/models/order_model.dart';
 import 'package:teste/src/services/utils_services.dart';
 
 class PaymentDialog extends StatelessWidget {
   final OrderModel order;
+  final UtilsServices utilsServices = UtilsServices();
 
-   PaymentDialog({super.key, required this.order,});
-
-   final UtilsServices utilsServices = UtilsServices();
-
+  PaymentDialog({super.key, required this.order});
 
   @override
   Widget build(BuildContext context) {
@@ -18,70 +17,52 @@ class PaymentDialog extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Conteúdo
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Titulo
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 10),
-                  child: Text(
-                    'Pagamento com Pix',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
+                const Text(
+                  'Pagamento com Pix',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
-
-                // QR Code
+                const SizedBox(height: 10),
                 QrImageView(
-                  data: 'asd654as65da4s6d5a4s6d54',
+                  data: order.copyAndPaste,
                   version: QrVersions.auto,
-                  size: 200.0,
+                  size: 200,
                 ),
-
-                // Vencimento
+                const SizedBox(height: 10),
                 Text(
                   'Vencimento: ${utilsServices.formatDatetime(order.overdueDateTime)}',
                   style: const TextStyle(fontSize: 12),
                 ),
-
-                // Total
                 Text(
                   'Total: ${utilsServices.priceToCurrency(order.total, 2)}',
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                 ),
-
-                // Botão copia e cola
+                const SizedBox(height: 10),
                 OutlinedButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: order.copyAndPaste));
+                    utilsServices.showToast(message: 'Código copiado com sucesso!');
+                  },
+                  icon: const Icon(Icons.copy, size: 16),
+                  label: const Text('Copiar código Pix'),
                   style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                     side: const BorderSide(width: 2, color: Colors.green),
-                  ),
-                  onPressed: () {},
-                  icon: const Icon(Icons.copy, size: 15),
-                  label: const Text(
-                    'Copiar código Pix',
-                    style: TextStyle(fontSize: 13),
                   ),
                 ),
               ],
             ),
           ),
-
           Positioned(
             top: 0,
             right: 0,
             child: IconButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
               icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ),
         ],

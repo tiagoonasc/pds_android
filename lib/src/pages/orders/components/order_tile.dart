@@ -1,148 +1,66 @@
 import 'package:flutter/material.dart';
-import 'package:teste/src/models/cart_item_model.dart';
 import 'package:teste/src/models/order_model.dart';
-import 'package:teste/src/pages/common_widgets/payment_dialog.dart';
-import 'package:teste/src/pages/orders/components/order_status_widget.dart';
 import 'package:teste/src/services/utils_services.dart';
+import 'package:teste/src/pages/common_widgets/payment_dialog.dart';
 
 class OrderTile extends StatelessWidget {
   final OrderModel order;
-   OrderTile({super.key, required this.order});
-
   final UtilsServices utilsServices = UtilsServices();
+
+  OrderTile({super.key, required this.order});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          initiallyExpanded: order.status == 'pending_payment',
-          title: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Pedido: ${order.id}'),
-              Text(
-                utilsServices.formatDatetime(order.createdDateTime),
-                style: const TextStyle(fontSize: 12, color: Colors.black),
-              ),
-            ],
-          ),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+      elevation: 2,
+      child: ExpansionTile(
+        title: Text('Pedido: ${order.id.substring(0, 6)}...'),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            IntrinsicHeight(
-              child: Row(
-                children: [
-                  // Lista de produtos
-                  Expanded(
-                    flex: 3,
-                    child: SizedBox(
-                      height: 150,
-                      child: ListView(
-                        children:
-                            order.items.map((orderItem) {
-                              return _OrderItemWidget(
-                                utilsServices: utilsServices,
-                                orderItem: orderItem,
-                              );
-                            }).toList(),
-                      ),
-                    ),
-                  ),
-
-                  // Divisão
-                  VerticalDivider(
-                    color: Colors.grey.shade300,
-                    thickness: 2,
-                    width: 8,
-                  ),
-
-                  // Status do pedido
-                  Expanded(
-                    flex: 2,
-                    child: OrderStatusWidget(
-                      status: order.status,
-                      isOverdue: order.overdueDateTime.isBefore(DateTime.now()),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Total
-            Text.rich(
-              TextSpan(
-                style: const TextStyle(fontSize: 20),
-                children: [
-                  const TextSpan(
-                    text: 'Total ',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  TextSpan(text: utilsServices.priceToCurrency(order.total,2)),
-                ],
-              ),
-            ),
-
-            // Botão pagamento
-            Visibility(
-              visible: order.status == 'pending_payment',
-              child: ElevatedButton.icon(
-             style: ElevatedButton.styleFrom(
-             shape: RoundedRectangleBorder(
-             borderRadius: BorderRadius.circular(20),
-             ),
-           ),
-             onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) {
-                      return PaymentDialog(
-                        order: order,
-                      );
-                    },
-                  );
-                },
-                icon: Image.asset(
-                  'assets/app_images/pix.png',
-                  height: 18,
-                ),
-                label: const Text('Ver QR Code Pix'),
-              ),
-            ),
+            Text('Status: ${_getStatusText(order.status)}'),
+            Text('Total: ${utilsServices.priceToCurrency(order.total, 2)}'),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _OrderItemWidget extends StatelessWidget {
-  const _OrderItemWidget({
-    Key? key,
-    required this.utilsServices,
-    required this.orderItem,
-  }) : super(key: key);
-
-  final UtilsServices utilsServices;
-  final CartItemModel orderItem;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
         children: [
-          Text(
-            '${orderItem.quantity} ${orderItem.item.unit} ',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          Expanded(child: Text(orderItem.item.itemName)),
-          Text(utilsServices.priceToCurrency(orderItem.totalPrice(),2)),
+          if (order.status == 'pending_payment')
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => PaymentDialog(order: order),
+                  );
+                },
+                icon: const Icon(Icons.pix, color: Colors.green),
+                label: const Text(
+                  'Pagar com Pix',
+                  style: TextStyle(color: Colors.green),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.green),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'pending_payment':
+        return 'Aguardando pagamento';
+      case 'paid':
+        return 'Pago';
+      case 'delivered':
+        return 'Entregue';
+      default:
+        return 'Desconhecido';
+    }
   }
 }
