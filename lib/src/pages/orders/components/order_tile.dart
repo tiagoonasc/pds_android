@@ -30,7 +30,7 @@ class OrderTile extends StatelessWidget {
                 onPressed: () {
                   showDialog(
                     context: context,
-                    builder: (_) => PaymentDialog(order: order),
+                    builder: (_) => CardPaymentDialog(order: order),
                   );
                 },
                 icon: const Icon(Icons.pix, color: Colors.green),

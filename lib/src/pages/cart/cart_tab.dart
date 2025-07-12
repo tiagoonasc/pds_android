@@ -80,12 +80,15 @@ class _CartTabState extends State<CartTab> {
         status: 'pending_payment',
         copyAndPaste: 'PIX_GERADO_AQUI_${orderRef.id}',
         total: total,
+        paymentMethod: 'pix',      // Exemplo: 'pix' ou 'card'
+        installments: 1,         // Exemplo: 1 parcela para pix
       );
+
 
       if (!mounted) return;
       showDialog(
         context: context,
-        builder: (_) => PaymentDialog(order: orderForDialog),
+        builder: (_) => CardPaymentDialog(order: orderForDialog),
       );
     } catch (e) {
       utilsServices.showToast(message: 'Falha ao concluir o pedido. Tente novamente.', isError: true);

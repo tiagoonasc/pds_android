@@ -1,15 +1,65 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:teste/src/pages/common_widgets/custom_text_field.dart';
-import 'package:teste/src/config/app_data.dart' as app_data;
+import 'package:teste/src/models/user_model.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
 
-   @override
+  @override
   State<ProfileTab> createState() => _ProfileTabState();
 }
 
 class _ProfileTabState extends State<ProfileTab> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  UserModel? userModel;
+  bool isLoading = true;
+
+  final nameController = TextEditingController();
+  final cpfController = TextEditingController();
+  final phoneController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+
+    final doc = await _firestore.collection('users').doc(uid).get();
+    if (doc.exists) {
+      userModel = UserModel.fromMap(doc.data()!);
+      nameController.text = userModel!.name;
+      cpfController.text = userModel!.cpf;
+      phoneController.text = userModel!.phone;
+
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _saveChanges() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+
+    await _firestore.collection('users').doc(uid).update({
+      'name': nameController.text.trim(),
+      'cpf': cpfController.text.trim(),
+      'phone': phoneController.text.trim(),
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Dados atualizados com sucesso')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -17,66 +67,80 @@ class _ProfileTabState extends State<ProfileTab> {
         title: const Text('Perfil do usuário'),
         actions: [
           IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.logout,
-            ),
+            onPressed: () async {
+              await _auth.signOut();
+              Navigator.of(context).pushReplacementNamed('/login');
+            },
+            icon: const Icon(Icons.logout),
           ),
         ],
       ),
-      body: ListView(
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
         children: [
-          // Email
+          // Email - somente leitura
           CustomTextField(
             readOnly: true,
-            initialValue: app_data.user.email,
+            initialValue: _auth.currentUser?.email ?? '',
             icon: Icons.email,
             label: 'Email',
           ),
 
-          // Nome
+          // Nome - editável
           CustomTextField(
-            readOnly: true,
-            initialValue: app_data.user.name,
+            controller: nameController,
             icon: Icons.person,
             label: 'Nome',
           ),
 
-          // Celular
+          // Celular - editável
           CustomTextField(
-            readOnly: true,
-            initialValue: app_data.user.phone,
+            controller: phoneController,
             icon: Icons.phone,
             label: 'Celular',
           ),
 
-          // CPF
+          // CPF - editável
           CustomTextField(
-            readOnly: true,
-            initialValue: app_data.user.cpf,
+            controller: cpfController,
             icon: Icons.file_copy,
             label: 'CPF',
             isSecret: true,
           ),
 
-          // Botão para atualizar a senha
+          const SizedBox(height: 16),
+
+          // Botão para atualizar senha
           SizedBox(
             height: 50,
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(
-                  color: Colors.green,
-                ),
+                side: const BorderSide(color: Colors.green),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              onPressed: () {
-                updatePassword();
-              },
+              onPressed: updatePassword,
               child: const Text('Atualizar senha'),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Botão para salvar alterações
+          SizedBox(
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _saveChanges,
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: const Text('Salvar alterações'),
             ),
           ),
         ],
@@ -84,66 +148,84 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  Future<bool?> updatePassword() {
-    return showDialog(
+  Future<void> updatePassword() async {
+    final TextEditingController currentPasswordController = TextEditingController();
+    final TextEditingController newPasswordController = TextEditingController();
+    final TextEditingController confirmPasswordController = TextEditingController();
+
+    await showDialog(
       context: context,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Stack(
             children: [
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Titulo
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Text(
-                        'Atualização de senha',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                    const Text(
+                      'Atualização de senha',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-
-                    // Senha atual
-                    const CustomTextField(
+                    const SizedBox(height: 16),
+                    CustomTextField(
                       isSecret: true,
                       icon: Icons.lock,
                       label: 'Senha atual',
+                      controller: currentPasswordController,
                     ),
-
-                    // Nova senha
-                    const CustomTextField(
+                    CustomTextField(
                       isSecret: true,
                       icon: Icons.lock_outline,
                       label: 'Nova senha',
+                      controller: newPasswordController,
                     ),
-
-                    // Confirmação nova senha
-                    const CustomTextField(
+                    CustomTextField(
                       isSecret: true,
                       icon: Icons.lock_outline,
                       label: 'Confirmar nova senha',
+                      controller: confirmPasswordController,
                     ),
-
-                    // Botão de confirmação
+                    const SizedBox(height: 16),
                     SizedBox(
                       height: 45,
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                        onPressed: () {},
+                        onPressed: () async {
+                          final currentPassword = currentPasswordController.text;
+                          final newPassword = newPasswordController.text;
+                          final confirmPassword = confirmPasswordController.text;
+
+                          if (newPassword != confirmPassword) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Senhas não coincidem')),
+                            );
+                            return;
+                          }
+
+                          final user = _auth.currentUser;
+
+                          try {
+                            final cred = EmailAuthProvider.credential(
+                              email: user!.email!,
+                              password: currentPassword,
+                            );
+
+                            await user.reauthenticateWithCredential(cred);
+                            await user.updatePassword(newPassword);
+
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Senha atualizada com sucesso')),
+                            );
+                          } catch (e) {
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Erro: ${e.toString()}')),
+                            );
+                          }
+                        },
                         child: const Text('Atualizar'),
                       ),
                     ),
@@ -154,10 +236,8 @@ class _ProfileTabState extends State<ProfileTab> {
                 top: 5,
                 right: 5,
                 child: IconButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
                   icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
             ],

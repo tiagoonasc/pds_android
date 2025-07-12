@@ -52,9 +52,9 @@ class CartService {
     if (!cartDoc.exists) {
       await cartRef.set({
         'productId': product.id,
-        'productName': product.nome,
-        'price': product.preco,
-        'description': product.descricao,
+        'productName': product.itemName,
+        'price': product.price,
+        'description': product.description,
         'quantity': 1,
       });
     } else {

@@ -21,27 +21,21 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _nameController.dispose();
     _priceController.dispose();
     _descriptionController.dispose();
+    _imgController.dispose();
     super.dispose();
   }
 
   Future<void> _saveProduct() async {
-    if (!_formKey.currentState!.validate()) {
-      return; // Se o formulário não for válido, não faz nada.
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       await FirebaseFirestore.instance.collection('produtos').add({
-        'itemName': _nameController.text,
-        'price': double.parse(_priceController.text), // Usa a variável já validada
-        'description': _descriptionController.text,
-        'imgUrl': _imgController.text,
-        // Você também pode querer salvar um campo de imagem ou unidade, se tiver
-        // 'imgUrl': 'url_da_imagem_aqui',
-        // 'unit': 'unidade',
+        'itemName': _nameController.text.trim(),
+        'price': double.parse(_priceController.text.trim()),
+        'description': _descriptionController.text.trim(),
+        'imgUrl': _imgController.text.trim(),
       });
 
       if (!mounted) return;
@@ -53,9 +47,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
         ),
       );
 
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (builder) {
-        return AddProductScreen();
-      })); // Volta para a tela anterior
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const AddProductScreen()),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -65,12 +59,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
         ),
       );
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Widget _imagePreview() {
+    final url = _imgController.text.trim();
+    if (url.isEmpty) return const SizedBox();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Image.network(
+        url,
+        height: 150,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+        const Text('URL inválida'),
+      ),
+    );
   }
 
   @override
@@ -84,18 +89,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: ListView(
             children: [
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Nome do Produto'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, insira o nome do produto.';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                value == null || value.isEmpty ? 'Insira o nome.' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -104,10 +104,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Por favor, insira o preço.';
+                    return 'Insira o preço.';
                   }
                   if (double.tryParse(value) == null) {
-                    return 'Por favor, insira um número válido.';
+                    return 'Número inválido.';
                   }
                   return null;
                 },
@@ -117,24 +117,18 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'Descrição'),
                 maxLines: 3,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, insira a descrição.';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                value == null || value.isEmpty ? 'Insira a descrição.' : null,
               ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _imgController,
-                decoration: const InputDecoration(labelText: 'Imagem'),
-                maxLines: 3,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, insira a imagem.';
-                  }
-                  return null;
-                },
+                decoration: const InputDecoration(labelText: 'URL da Imagem'),
+                onChanged: (_) => setState(() {}),
+                validator: (value) =>
+                value == null || value.isEmpty ? 'Insira a imagem.' : null,
               ),
+              _imagePreview(),
               const SizedBox(height: 32),
               ElevatedButton(
                 onPressed: _isLoading ? null : _saveProduct,

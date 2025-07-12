@@ -1,72 +1,76 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/src/models/order_model.dart';
-import 'package:teste/src/services/utils_services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class PaymentDialog extends StatelessWidget {
+class CardPaymentDialog extends StatefulWidget {
   final OrderModel order;
-  final UtilsServices utilsServices = UtilsServices();
 
-  PaymentDialog({super.key, required this.order});
+  const CardPaymentDialog({super.key, required this.order});
+
+  @override
+  State<CardPaymentDialog> createState() => _CardPaymentDialogState();
+}
+
+class _CardPaymentDialogState extends State<CardPaymentDialog> {
+  int _installments = 1;
+  bool _isProcessing = false;
+
+  void _payWithCard() async {
+    setState(() => _isProcessing = true);
+
+    await FirebaseFirestore.instance
+        .collection('orders')
+        .doc(widget.order.id)
+        .update({
+      'status': 'paid',
+      'paymentType': 'card',
+      'installments': _installments,
+    });
+
+    if (mounted) Navigator.of(context).pop();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Stack(
-        alignment: Alignment.center,
+    return AlertDialog(
+      title: const Text('Pagamento com Cartão'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Pagamento com Pix',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-                const SizedBox(height: 10),
-                QrImageView(
-                  data: order.copyAndPaste,
-                  version: QrVersions.auto,
-                  size: 200,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Vencimento: ${utilsServices.formatDatetime(order.overdueDateTime)}',
-                  style: const TextStyle(fontSize: 12),
-                ),
-                Text(
-                  'Total: ${utilsServices.priceToCurrency(order.total, 2)}',
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: order.copyAndPaste));
-                    utilsServices.showToast(message: 'Código copiado com sucesso!');
-                  },
-                  icon: const Icon(Icons.copy, size: 16),
-                  label: const Text('Copiar código Pix'),
-                  style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                    side: const BorderSide(width: 2, color: Colors.green),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
+          const Text('Selecione a quantidade de parcelas:'),
+          const SizedBox(height: 10),
+          DropdownButton<int>(
+            value: _installments,
+            items: List.generate(6, (i) {
+              final parcelas = i + 1;
+              return DropdownMenuItem(
+                value: parcelas,
+                child: Text('$parcelas x'),
+              );
+            }),
+            onChanged: (value) {
+              if (value != null) setState(() => _installments = value);
+            },
           ),
         ],
       ),
+      actions: [
+        if (_isProcessing)
+          const Padding(
+            padding: EdgeInsets.all(8),
+            child: CircularProgressIndicator(),
+          )
+        else ...[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: _payWithCard,
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ],
     );
   }
 }

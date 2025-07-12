@@ -66,6 +66,8 @@ class OrdersTab extends StatelessWidget {
               copyAndPaste: data['copyAndPaste'] ?? 'PIX_GERADO_AQUI_${doc.id}',
               total: (data['totalAmount'] ?? 0).toDouble(),
               items: items,
+              paymentMethod: data['paymentMethod'] ?? 'pix',
+              installments: data['installments'] ?? 1,
             );
           }).toList();
 
@@ -86,6 +88,7 @@ class OrdersTab extends StatelessWidget {
                     children: [
                       Text('Status: ${_getStatusText(order.status)}'),
                       Text('Total: ${utilsServices.priceToCurrency(order.total, 2)}'),
+                      Text('Pagamento: ${_getPaymentText(order)}'),
                     ],
                   ),
                   children: [
@@ -108,24 +111,52 @@ class OrdersTab extends StatelessWidget {
                     if (order.status == 'pending_payment')
                       Padding(
                         padding: const EdgeInsets.only(bottom: 10),
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => PaymentDialog(order: order),
-                            );
-                          },
-                          icon: const Icon(Icons.pix, color: Colors.green),
-                          label: const Text(
-                            'Pagar com Pix',
-                            style: TextStyle(color: Colors.green),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.green),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
+                        child: Column(
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => CardPaymentDialog(order: order),
+                                );
+                              },
+                              icon: const Icon(Icons.pix, color: Colors.green),
+                              label: const Text(
+                                'Pagar com Pix',
+                                style: TextStyle(color: Colors.green),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Colors.green),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 8),
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                // TODO: Implementar lógica de pagamento com cartão
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => const AlertDialog(
+                                    title: Text('Pagamento com Cartão'),
+                                    content: Text('Funcionalidade em desenvolvimento.'),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.credit_card, color: Colors.blue),
+                              label: const Text(
+                                'Pagar com Cartão',
+                                style: TextStyle(color: Colors.blue),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Colors.blue),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                   ],
@@ -148,6 +179,16 @@ class OrdersTab extends StatelessWidget {
         return 'Entregue';
       default:
         return 'Desconhecido';
+    }
+  }
+
+  String _getPaymentText(OrderModel order) {
+    if (order.paymentMethod == 'pix') {
+      return 'Pix';
+    } else if (order.paymentMethod == 'card') {
+      return 'Cartão (${order.installments}x)';
+    } else {
+      return 'Desconhecido';
     }
   }
 }
